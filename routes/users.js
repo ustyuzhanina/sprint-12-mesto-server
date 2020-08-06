@@ -24,6 +24,7 @@ router.get('/', (req, res) => {
       JSON.parse(data);
     } catch (err) {
       res.status(500).send({ message: err.message });
+      return;
     }
 
     const dataParsed = JSON.parse(data);
@@ -48,6 +49,7 @@ router.get('/:id', (req, res) => {
       JSON.parse(array);
     } catch (err) {
       res.status(500).send({ message: err.message });
+      return;
     }
 
     const arrayParsed = JSON.parse(array);
