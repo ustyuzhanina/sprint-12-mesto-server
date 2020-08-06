@@ -1,28 +1,42 @@
 const router = require('express').Router();
 const path = require('path');
 const fs = require('fs');
-//const { createReadStream } = require('fs'); next time
+// const { createReadStream } = require('fs'); next sprint
 
+function createReadStream(fileName) {
+  const filePath = path.join(__dirname, '../data', fileName);
+  return fs.createReadStream(filePath);
+}
 
 router.get('/', (req, res) => {
-  const filePath = path.join(__dirname, '../data', 'users.json');
-  const reader = fs.createReadStream(filePath);
+  const reader = createReadStream('users.json');
 
-  reader.on('error', err => res.status(500).send({'message': err.message}));
+  reader.on('error', (err) => res.status(500).send({ message: err.message }));
 
-  reader.on('open', () => {
-    res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-    reader.pipe(res);
+  let data = '';
+
+  reader.on('data', (chunk) => {
+    data += chunk.toString();
   });
 
+  reader.on('end', () => {
+    try {
+      JSON.parse(data);
+    } catch (err) {
+      res.status(500).send({ message: err.message });
+      return;
+    }
+
+    const dataParsed = JSON.parse(data);
+
+    res.send(dataParsed);
+  });
 });
 
-
 router.get('/:id', (req, res) => {
-  const filePath = path.join(__dirname, '../data', 'users.json');
-  const reader = fs.createReadStream(filePath, {encoding: 'utf8'});
+  const reader = createReadStream('users.json');
 
-  reader.on('error', err => res.status(500).send({'message': err.message}));
+  reader.on('error', (err) => res.status(500).send({ message: err.message }));
 
   let array = '';
 
@@ -30,20 +44,24 @@ router.get('/:id', (req, res) => {
     array += chunk.toString();
   });
 
-    reader.on('end', () => {
-      const arrayParsed = JSON.parse(array);
-      const user = arrayParsed.find((user) => String(user._id) === req.params.id);
+  reader.on('end', () => {
+    try {
+      JSON.parse(array);
+    } catch (err) {
+      res.status(500).send({ message: err.message });
+      return;
+    }
 
-      if(!user) {
-        res.status(404).send({ "message": "Нет пользователя с таким id" });
-        return;
-      }
+    const arrayParsed = JSON.parse(array);
+    const userFound = arrayParsed.find((user) => String(user._id) === req.params.id);
 
-      res.send(user);
-    })
+    if (!userFound) {
+      res.status(404).send({ message: 'Нет пользователя с таким id' });
+      return;
+    }
 
-
-
+    res.send(userFound);
+  });
 });
 
 module.exports = router;
